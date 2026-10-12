@@ -1,0 +1,77 @@
+:root {
+    --accent:  #2a53a4;
+    --ink:     #212529;
+    --muted:   #6c757d;
+    --line:    #dee2e6;
+    --app-bg:  #f8f9fa;
+    --card-bg: #ffffff;
+}
+
+/* фон страницы */
+.stApp {
+    background-color: var(--app-bg);
+}
+
+/* базовый текст */
+html, body, [class*="css"] {
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* отступы страницы */
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+    max-width: 900px;
+}
+
+/* пузыри чата */
+[data-testid="stChatMessage"] {
+    background-color: var(--card-bg);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 0;
+    padding: 16px 18px;
+    box-shadow: none;
+}
+
+[data-testid="stChatMessage"] p,
+[data-testid="stChatMessage"] span,
+[data-testid="stChatMessage"] div {
+    color: var(--ink) !important;
+}
+
+/* аватарки скрыты */
+[data-testid="stChatMessageAvatarUser"],
+[data-testid="stChatMessageAvatarAssistant"] {
+    display: none;
+}
+
+/* поле ввода */
+[data-testid="stChatInput"] {
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--card-bg) !important;
+}
+
+/* кнопки */
+.stButton > button {
+    background-color: var(--accent);
+    color: #ffffff;
+    border-radius: 0;
+    border: none;
+    font-weight: 600;
+}
+
+/* таблица */
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--line);
+    border-radius: 0;
+}
+
+/* ссылки и подписи */
+a { color: var(--accent); }
+
+[data-testid="stCaptionContainer"] {
+    color: var(--muted) !important;
+}

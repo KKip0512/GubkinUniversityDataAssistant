@@ -1,0 +1,84 @@
+name: gubkinuniversitydataassistant
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-university}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      READONLY_USER: ${READONLY_USER:-readonly_user}
+      READONLY_PASSWORD: ${READONLY_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./Database/initdb:/docker-entrypoint-initdb.d:ro
+      - ./Database:/seed:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    gpus: all
+    environment:
+      OLLAMA_NUM_PARALLEL: ${LLM_PARALLEL:-2}
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${LLM_MODEL:-qwen2.5-coder:7b}"]
+    restart: "no"
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=${POSTGRES_DB:-university};Username=${READONLY_USER:-readonly_user};Password=${READONLY_PASSWORD:-changeme}"
+      Llm__BaseUrl: http://ollama:11434
+      Llm__Model: ${LLM_MODEL:-qwen2.5-coder:7b}
+      Llm__TimeoutSeconds: ${LLM_TIMEOUT_SECONDS:-180}
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  frontend:
+    build: ./Frontend
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8080/api/query
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT:-420}
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8501:8501"
+
+volumes:
+  pgdata:
+  ollama_data:
