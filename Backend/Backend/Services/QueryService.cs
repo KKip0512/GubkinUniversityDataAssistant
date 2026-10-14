@@ -6,6 +6,7 @@ namespace Backend.Services
 {
     public class QueryService(
         ILlmClient llm,
+        PostgresSchemaProvider schemaProvider,
         SqlValidator validator,
         IQueryExecutor executor,
         IConfiguration config,
@@ -25,6 +26,17 @@ namespace Backend.Services
             var started = DateTime.UtcNow;
             logger.LogInformation("Вопрос: {Question}", question);
 
+            string schema;
+            try
+            {
+                schema = await schemaProvider.GetSchemaAsync(ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                logger.LogError(ex, "Не удалось загрузить схему БД");
+                return QueryResponse.Fail(null, QueryResponse.UnavailableMessage);
+            }
+
             string? lastSql = null;
             string? lastError = null;
 
@@ -33,7 +45,7 @@ namespace Backend.Services
                 string rawSql;
                 try
                 {
-                    rawSql = await llm.GenerateSqlAsync(question, lastSql, lastError, ct);
+                    rawSql = await llm.GenerateSqlAsync(question, schema, lastSql, lastError, ct);
                 }
                 catch (Exception ex) when (!ct.IsCancellationRequested)
                 {

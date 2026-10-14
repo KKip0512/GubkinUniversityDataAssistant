@@ -37,7 +37,6 @@ namespace Backend.Sql
 
         private async Task<TableResult> ExecuteCoreAsync(string sql, CancellationToken ct)
         {
-            // Подзапрос в обёртке: LIMIT работает, даже если модель его не написала.
             var limitedSql = $"SELECT * FROM ({sql}) AS q LIMIT {_maxRows}";
 
             await using var conn = new NpgsqlConnection(_connString);

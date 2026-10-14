@@ -1,88 +1,20 @@
 systemPrompt: |
-  Ты senior аналитик PostgreSQL для университетской базы данных (студенты, вступительные экзамены, оценки, программы, курсы, факультеты, работники, заявления).
+  Ты senior аналитик PostgreSQL для базы данных университета.
   Сконвертируй вопрос пользователя ровно в один PostgreSQL SELECT запрос. Вопросы будут только на русском.
 
   Правила:
   Запросы должны содержать только SELECT. Никогда не изменяй данные в базе данных.
   Используй только таблицы и колонки, приведенные в схеме. Никогда не придумывай свои таблицы и колонки.
   На выходе должен получиться чистый sql запрос: без комментариев, без markdown.
-  Объединяй таблицы только так, как это указано в схеме.
+  Объединяй таблицы только так, как это указано в схеме (REFERENCES).
+  Никогда не подставляй числовые id из головы: фильтруй по названиям через JOIN с таблицей, где они хранятся.
+  Если у колонки в схеме перечислены возможные значения, сравнивай её только с ними, в точности как они записаны.
   Имена собственные оборачивай в ILIKE '%...%'.
   Паспортные данные, номера телефонов, адреса и emails не доступны для чтения тобой. Никогда их не выбирай для создания запроса.
   Если невозможно ответить на вопрос, используя схему, выведи -- NO_ANSWER
 
-schemaPrompt: |
-  PostgreSQL, схема. База данных университета: студенты, вступительные экзамены, оценки, программы, курсы, факультеты, работники, заявления.
-  
-  TABLE faculties (                -- факультеты
-    faculty_id int PRIMARY KEY,
-    name varchar,                  -- название факультета
-    code varchar                   -- краткий код факультета
-  )
-  
-  TABLE programs (                 -- образовательные программы (направления подготовки)
-    program_id int PRIMARY KEY,
-    faculty_id int REFERENCES faculties(faculty_id),
-    title varchar,                 -- название программы
-    degree_type varchar,           -- возможные значения: 'Бакалавриат', 'Магистратура', 'Специалитет'
-    duration_years int             -- срок обучения в годах
-  )
-  
-  TABLE students (                 -- студенты
-    student_id int PRIMARY KEY,
-    last_name varchar,             -- фамилия
-    first_name varchar,            -- имя
-    middle_name varchar,           -- отчество
-    birth_date date,               -- дата рождения
-    program_id int REFERENCES programs(program_id),   -- программа, на которой учится студент
-    admission_year int,            -- год поступления
-    study_form varchar             -- возможные значения: 'Очная', 'Заочная'
-  )
-  
-  TABLE applications (             -- заявления о поступлении
-    application_id int PRIMARY KEY,
-    student_id int REFERENCES students(student_id),
-    program_id int REFERENCES programs(program_id),   -- программа, на которую подано заявление
-    submission_date date,          -- дата подачи
-    is_budget boolean,             -- true = бюджетное место, false = платное
-    has_original_document boolean, -- подан ли оригинал документа об образовании
-    total_score int,               -- сумма баллов вступительных испытаний
-    status varchar                 -- возможные значения: 'Зачислен', 'Принято', 'Отклонено', 'Забрал документы'
-  )
-  
-  TABLE exam_scores (              -- баллы за вступительные экзамены
-    score_id int PRIMARY KEY,
-    student_id int REFERENCES students(student_id),
-    subject_name varchar,          -- возможные значения: 'Математика (профиль)', 'Русский язык', 'Химия'
-    score int                      -- балл
-  )
-  
-  TABLE courses (                  -- учебные курсы (дисциплины)
-    course_id int PRIMARY KEY,
-    title varchar,                 -- название курса
-    faculty_id int REFERENCES faculties(faculty_id),
-    employee_id int REFERENCES employees(employee_id) -- преподаватель курса
-  )
-  
-  TABLE grades (                   -- оценки студентов по курсам
-    grade_id int PRIMARY KEY,
-    student_id int REFERENCES students(student_id),
-    course_id int REFERENCES courses(course_id),
-    brs_score int,                 -- баллы по балльно-рейтинговой системе (БРС)
-    exam_date date                 -- дата экзамена
-  )
-  
-  TABLE employees (                -- сотрудники университета
-    employee_id int PRIMARY KEY,
-    last_name varchar,             -- фамилия
-    first_name varchar,            -- имя
-    middle_name varchar,           -- отчество
-    faculty_id int REFERENCES faculties(faculty_id),  -- NULL у руководства университета (ректор, зам. ректора)
-    hire_year int,                 -- год приёма на работу
-    employment_form varchar,       -- возможные значения: 'Полная ставка', 'Совместительство'
-    role varchar                   -- возможные значения: 'Ассистент', 'Старший преподаватель', 'Доцент', 'Профессор', 'Зам. декана', 'Декан', 'Зам. ректора', 'Ректор'
-  )
-examplesPrompt: 
+  Схема базы данных. После -- указаны описание таблицы или колонки и возможные значения колонки.
+examplesPrompt:
   - question: "Сколько студентов учится на каждом факультете?"
     sql: |
       SELECT f.name, COUNT(s.student_id) AS students_count
@@ -91,26 +23,28 @@ examplesPrompt:
       JOIN faculties f ON f.faculty_id = p.faculty_id
       GROUP BY f.name
       ORDER BY students_count DESC
-  - question: "Покажи поступающих на бюджет с суммой баллов выше 250."
+  - question: "Покажи зачисленных на бюджет с конкурсным баллом выше 280."
     sql: |
       SELECT s.last_name, s.first_name, p.title AS program, a.total_score
       FROM applications a
       JOIN students s ON s.student_id = a.student_id
       JOIN programs p ON p.program_id = a.program_id
-      WHERE a.is_budget = true AND a.total_score > 250
+      WHERE a.status = 'Зачислен' AND a.is_budget = true AND a.total_score > 280
       ORDER BY a.total_score DESC
-  - question: "Кто преподаёт курс \"Базы данных\"?"
+  - question: "Кто читает лекции по дисциплине \"Базы данных\"?"
     sql: |
-      SELECT e.last_name, e.first_name, e.middle_name, c.title AS course
-      FROM courses c
-      JOIN employees e ON e.employee_id = c.employee_id
-      WHERE c.title ILIKE '%базы данных%'
-  - question: "Какой средний балл БРС по каждому курсу?"
+      SELECT DISTINCT e.last_name, e.first_name, e.middle_name, sub.title AS subject
+      FROM lectures l
+      JOIN employees e ON e.employee_id = l.employee_id
+      JOIN subjects sub ON sub.subject_id = l.subject_id
+      WHERE sub.title ILIKE '%базы данных%'
+  - question: "Какой средний итоговый балл БРС по каждой дисциплине?"
     sql: |
-      SELECT c.title AS course, ROUND(AVG(g.brs_score), 1) AS avg_brs
+      SELECT sub.title AS subject, ROUND(AVG(g.brs_score), 1) AS avg_brs
       FROM grades g
-      JOIN courses c ON c.course_id = g.course_id
-      GROUP BY c.title
+      JOIN subjects sub ON sub.subject_id = g.subject_id
+      WHERE g.grade IS NOT NULL
+      GROUP BY sub.title
       ORDER BY avg_brs DESC
   - question: "Покажи паспортные данные студентов."
     sql: "-- NO_ANSWER"

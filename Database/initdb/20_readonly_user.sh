@@ -14,11 +14,11 @@ SELECT format('GRANT CONNECT ON DATABASE %I TO %I', :'db', :'ro_user') \gexec
 SELECT format('GRANT USAGE ON SCHEMA public TO %I', :'ro_user') \gexec
 
 -- Таблицы без персональных данных: читать можно всё
-SELECT format('GRANT SELECT ON public.faculties, public.programs, public.courses, public.applications, public.exam_scores, public.grades TO %I', :'ro_user') \gexec
+SELECT format('GRANT SELECT ON public.faculties, public.education_levels, public.programs, public.subjects, public.curriculum, public.streams, public.student_groups, public.ege_scores, public.applications, public.grades, public.lectures, public.seminars TO %I', :'ro_user') \gexec
 
 -- Таблицы с персональными данными: только безопасные колонки
-SELECT format('GRANT SELECT (student_id, last_name, first_name, middle_name, birth_date, program_id, admission_year, study_form) ON public.students TO %I', :'ro_user') \gexec
-SELECT format('GRANT SELECT (employee_id, last_name, first_name, middle_name, birth_date, faculty_id, hire_year, employment_form, role) ON public.employees TO %I', :'ro_user') \gexec
+SELECT format('GRANT SELECT (student_id, last_name, first_name, middle_name, gender, birth_date, program_id, group_id, admission_year, course, study_form, is_budget, military_training, military_start_year, military_end_year) ON public.students TO %I', :'ro_user') \gexec
+SELECT format('GRANT SELECT (employee_id, last_name, first_name, middle_name, gender, birth_date, faculty_id, role, academic_degree, hire_year, employment_form) ON public.employees TO %I', :'ro_user') \gexec
 
 -- На случай, если модель сгенерирует что-то опасное: ни записи, ни долгих запросов
 SELECT format('ALTER ROLE %I SET default_transaction_read_only = on', :'ro_user') \gexec

@@ -48,8 +48,8 @@ builder.Services.AddHttpClient<ILlmClient, OllamaLlmClient>((sp, client) =>
     client.Timeout = TimeSpan.FromSeconds(llm.TimeoutSeconds);
 });
 
-
 builder.Services.AddSingleton<IQueryExecutor, PostgresQueryExecutor>();
+builder.Services.AddSingleton<PostgresSchemaProvider>();
 
 builder.Services.AddScoped<QueryService>();
 
