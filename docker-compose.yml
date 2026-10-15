@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       READONLY_USER: ${READONLY_USER:-readonly_user}
-      READONLY_PASSWORD: ${READONLY_PASSWORD:-readonly_user}
+      READONLY_PASSWORD: ${READONLY_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./Database/initdb:/docker-entrypoint-initdb.d:ro
@@ -58,7 +58,7 @@ services:
       dockerfile: Backend/Dockerfile
     restart: unless-stopped
     environment:
-      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=${POSTGRES_DB:-university};Username=${READONLY_USER:-readonly_user};Password=${READONLY_PASSWORD:-readonly_user}"
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=${POSTGRES_DB:-university};Username=${READONLY_USER:-readonly_user};Password=${READONLY_PASSWORD:-changeme}"
       Llm__BaseUrl: http://ollama:11434
       Llm__Model: ${LLM_MODEL:-qwen2.5-coder:7b}
       Llm__EmbeddingModel: ${EMBEDDING_MODEL:-paraphrase-multilingual}
