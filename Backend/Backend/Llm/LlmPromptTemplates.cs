@@ -7,9 +7,6 @@ namespace Backend.Llm
         [YamlMember(Alias = "systemPrompt")]
         public required string System { get; init; }
 
-        [YamlMember(Alias = "examplesPrompt")]
-        public required List<PromptExample> Examples { get; init; }
-
         [YamlMember(Alias = "retryPrompt")]
         public required string Retry { get; init; }
     }

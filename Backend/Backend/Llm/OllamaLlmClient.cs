@@ -4,11 +4,11 @@ namespace Backend.Llm
 {
     public class OllamaLlmClient(HttpClient http, IOptions<LlmOptions> options, OllamaMessagesBuilder ollamaMessagesBuilder) : ILlmClient
     {
-        public async Task<string> GenerateSqlAsync(string question, string schema, string? previousSql = null, string? previousError = null, CancellationToken ct = default)
+        public async Task<string> GenerateSqlAsync(string question, string schema, IReadOnlyList<PromptExample> examples, string? previousSql = null, string? previousError = null, CancellationToken ct = default)
         {
             var request = new OllamaChatRequest(
                 Model: options.Value.Model,
-                Messages: ollamaMessagesBuilder.Build(schema, question, previousSql, previousError),
+                Messages: ollamaMessagesBuilder.Build(schema, examples, question, previousSql, previousError),
                 Stream: false,
                 KeepAlive: $"{options.Value.KeepAliveMinutes}m",
                 Options: new OllamaOptions(Temperature: 0, options.Value.ContextSize));

@@ -6,7 +6,6 @@ namespace Backend.Llm
     public class OllamaMessagesBuilder
     {
         private readonly string _system;
-        private readonly IReadOnlyList<OllamaMessage> _examples;
         private readonly string _retryTemplate;
 
         public OllamaMessagesBuilder(PromptTemplates templates)
@@ -15,22 +14,8 @@ namespace Backend.Llm
                 throw new InvalidOperationException("Prompts: не задан system");
             if (string.IsNullOrWhiteSpace(templates.Retry))
                 throw new InvalidOperationException("Prompts: не задан retry");
-            if (templates.Examples.Count == 0)
-                throw new InvalidOperationException("Prompts: не заданы examples");
-
-            var examples = new List<OllamaMessage>();
-            foreach (var example in templates.Examples)
-            {
-                if (string.IsNullOrWhiteSpace(example.Question))
-                    throw new InvalidOperationException("Prompts: не задан впорос в examples:question");
-                examples.Add(new(OllamaMessageRole.User, example.Question.Trim()));
-                if (string.IsNullOrWhiteSpace(example.Sql))
-                    throw new InvalidOperationException("Prompts: не задан sql в examples:sql");
-                examples.Add(new(OllamaMessageRole.Assistant, example.Sql.Trim()));
-            }
 
             _system = templates.System.Trim();
-            _examples = examples;
             _retryTemplate = templates.Retry.Trim();
         }
 
@@ -44,10 +29,15 @@ namespace Backend.Llm
             return new OllamaMessagesBuilder(templates);
         }
 
-        public IReadOnlyList<OllamaMessage> Build(string schema, string question, string? previousSql, string? previousError)
+        public IReadOnlyList<OllamaMessage> Build(
+            string schema, IReadOnlyList<PromptExample> examples, string question, string? previousSql, string? previousError)
         {
             var messages = new List<OllamaMessage> { new(OllamaMessageRole.System, $"{_system}\n\n{schema}") };
-            messages.AddRange(_examples);
+            foreach (var example in examples)
+            {
+                messages.Add(new(OllamaMessageRole.User, example.Question.Trim()));
+                messages.Add(new(OllamaMessageRole.Assistant, example.Sql.Trim()));
+            }
             messages.Add(new(OllamaMessageRole.User, question));
 
             if (!string.IsNullOrWhiteSpace(previousSql) && !string.IsNullOrWhiteSpace(previousError))

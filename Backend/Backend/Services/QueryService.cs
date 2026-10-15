@@ -7,6 +7,7 @@ namespace Backend.Services
     public class QueryService(
         ILlmClient llm,
         PostgresSchemaProvider schemaProvider,
+        ExampleSelector exampleSelector,
         SqlValidator validator,
         IQueryExecutor executor,
         IConfiguration config,
@@ -37,6 +38,9 @@ namespace Backend.Services
                 return QueryResponse.Fail(null, QueryResponse.UnavailableMessage);
             }
 
+            var examples = await exampleSelector.SelectAsync(question, ct);
+            logger.LogDebug("Примеры для модели: {Examples}", string.Join(" | ", examples.Select(e => e.Question)));
+
             string? lastSql = null;
             string? lastError = null;
 
@@ -45,7 +49,7 @@ namespace Backend.Services
                 string rawSql;
                 try
                 {
-                    rawSql = await llm.GenerateSqlAsync(question, schema, lastSql, lastError, ct);
+                    rawSql = await llm.GenerateSqlAsync(question, schema, examples, lastSql, lastError, ct);
                 }
                 catch (Exception ex) when (!ct.IsCancellationRequested)
                 {

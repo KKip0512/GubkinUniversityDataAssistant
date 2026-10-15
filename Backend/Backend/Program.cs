@@ -41,12 +41,16 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddSingleton<SqlValidator>();
 
-builder.Services.AddHttpClient<ILlmClient, OllamaLlmClient>((sp, client) =>
+static void ConfigureOllama(IServiceProvider sp, HttpClient client)
 {
     var llm = sp.GetRequiredService<IOptions<LlmOptions>>().Value;
     client.BaseAddress = new Uri(llm.BaseUrl);
     client.Timeout = TimeSpan.FromSeconds(llm.TimeoutSeconds);
-});
+}
+
+builder.Services.AddHttpClient<ILlmClient, OllamaLlmClient>(ConfigureOllama);
+builder.Services.AddHttpClient(ExampleSelector.HttpClientName, ConfigureOllama);
+builder.Services.AddSingleton<ExampleSelector>();
 
 builder.Services.AddSingleton<IQueryExecutor, PostgresQueryExecutor>();
 builder.Services.AddSingleton<PostgresSchemaProvider>();

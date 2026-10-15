@@ -1,0 +1,276 @@
+- id: full_time_by_faculty
+  question: "Сколько студентов очной формы обучения на каждом факультете?"
+  sql: |
+    SELECT f.name, COUNT(*)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE s.study_form = 'Очная'
+    GROUP BY f.name
+
+- id: students_by_level
+  question: "Сколько студентов учится на каждом уровне образования?"
+  sql: |
+    SELECT l.name, COUNT(*)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN education_levels l ON l.level_id = p.level_id
+    GROUP BY l.name
+
+- id: postgrads_by_faculty
+  question: "Сколько аспирантов на каждом факультете?"
+  sql: |
+    SELECT f.name, COUNT(*)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN education_levels l ON l.level_id = p.level_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE l.name = 'Аспирантура'
+    GROUP BY f.name
+
+- id: budget_vs_contract
+  question: "Сколько студентов учится на бюджете, а сколько на контракте?"
+  sql: |
+    SELECT COUNT(*) FROM students GROUP BY is_budget
+
+- id: military_total
+  question: "Сколько студентов обучается на военной кафедре?"
+  sql: |
+    SELECT COUNT(*) FROM students WHERE military_training
+
+- id: girls_chemistry
+  question: "Сколько девушек учится на факультете химической технологии и экологии?"
+  sql: |
+    SELECT COUNT(*)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE s.gender = 'Ж' AND f.name = 'Факультет химической технологии и экологии'
+
+- id: born_2005
+  question: "Сколько студентов родилось в 2005 году?"
+  sql: |
+    SELECT COUNT(*) FROM students WHERE EXTRACT(YEAR FROM birth_date) = 2005
+
+- id: group_size
+  question: "Сколько студентов в группе ЭК-24-02?"
+  sql: |
+    SELECT COUNT(*)
+    FROM students s
+    JOIN student_groups g ON g.group_id = s.group_id
+    WHERE g.name = 'ЭК-24-02'
+
+- id: full_time_groups_by_course
+  question: "Сколько групп очной формы на каждом курсе?"
+  sql: |
+    SELECT course, COUNT(*) FROM student_groups WHERE study_form = 'Очная' GROUP BY course
+
+- id: extramural_streams
+  question: "Сколько потоков у заочной формы обучения?"
+  sql: |
+    SELECT COUNT(*) FROM streams WHERE study_form = 'Заочная'
+
+- id: compare_faculties_both
+  question: "какой факультет лучше учится: автоматики и вычислительной техники или юридический? покажи средний балл обоих факультетов"
+  sql: |
+    SELECT f.name, AVG(g.brs_score)
+    FROM grades g
+    JOIN students s ON s.student_id = g.student_id
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE g.grade IS NOT NULL
+      AND f.name IN ('Факультет автоматики и вычислительной техники', 'Юридический факультет')
+    GROUP BY f.name
+
+- id: compare_faculties_two
+  question: "какой факультет лучше учится: автоматики и вычислительной техники или юридический? покажи средний балл двух факультетов"
+  sql: |
+    SELECT f.name, AVG(g.brs_score)
+    FROM grades g
+    JOIN students s ON s.student_id = g.student_id
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE g.grade IS NOT NULL
+      AND f.name IN ('Факультет автоматики и вычислительной техники', 'Юридический факультет')
+    GROUP BY f.name
+
+- id: compare_levels
+  question: "Сравни средний итоговый балл БРС у бакалавров и магистров"
+  sql: |
+    SELECT l.name, AVG(g.brs_score)
+    FROM grades g
+    JOIN students s ON s.student_id = g.student_id
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN education_levels l ON l.level_id = p.level_id
+    WHERE g.grade IS NOT NULL AND l.name IN ('Бакалавриат', 'Магистратура')
+    GROUP BY l.name
+
+- id: top5_subjects
+  question: "Топ-5 дисциплин с самым высоким средним итоговым баллом БРС"
+  sql: |
+    SELECT sub.title, AVG(g.brs_score)
+    FROM grades g
+    JOIN subjects sub ON sub.subject_id = g.subject_id
+    WHERE g.grade IS NOT NULL
+    GROUP BY sub.title
+    ORDER BY 2 DESC
+    LIMIT 5
+
+- id: fails_2024
+  question: "Сколько неудовлетворительных оценок поставили в 2024/2025 учебном году?"
+  sql: |
+    SELECT COUNT(*) FROM grades WHERE grade = 'неудовлетворительно' AND academic_year = '2024/2025'
+
+- id: low_current_rating
+  question: "Сколько студентов 2 курса имеют текущий рейтинг ниже 10 баллов хотя бы по одной дисциплине?"
+  sql: |
+    SELECT COUNT(DISTINCT s.student_id)
+    FROM students s
+    JOIN grades g ON g.student_id = s.student_id
+    WHERE s.course = 2 AND g.grade IS NULL AND g.brs_score < 10
+
+- id: current_rating_first_year
+  question: "Какой средний текущий рейтинг у студентов 1 курса в этом семестре?"
+  sql: |
+    SELECT AVG(g.brs_score)
+    FROM grades g
+    JOIN students s ON s.student_id = g.student_id
+    WHERE s.course = 1 AND g.grade IS NULL
+
+- id: employees_by_role
+  question: "Сколько преподавателей занимает каждую должность?"
+  sql: |
+    SELECT role, COUNT(*) FROM employees GROUP BY role
+
+- id: senior_lecturers_without_degree
+  question: "Сколько старших преподавателей без учёной степени на каждом факультете?"
+  sql: |
+    SELECT f.name, COUNT(*)
+    FROM employees e
+    JOIN faculties f ON f.faculty_id = e.faculty_id
+    WHERE e.role = 'Старший преподаватель' AND e.academic_degree IS NULL
+    GROUP BY f.name
+
+- id: deans
+  question: "Кто деканы факультетов?"
+  sql: |
+    SELECT last_name, first_name FROM employees WHERE role = 'Декан'
+
+- id: hired_after_2020
+  question: "Сколько преподавателей приняли на работу после 2020 года?"
+  sql: |
+    SELECT COUNT(*) FROM employees WHERE hire_year > 2020
+
+- id: seminars_in_group
+  question: "Какие преподаватели и по каким дисциплинам ведут семинары в группе АС-24-01?"
+  sql: |
+    SELECT DISTINCT e.last_name, e.first_name, sub.title
+    FROM seminars se
+    JOIN employees e ON e.employee_id = se.employee_id
+    JOIN subjects sub ON sub.subject_id = se.subject_id
+    JOIN student_groups g ON g.group_id = se.group_id
+    WHERE g.name = 'АС-24-01'
+
+- id: autumn_lecture_hours
+  question: "Сколько всего часов лекций запланировано в осеннем семестре?"
+  sql: |
+    SELECT SUM(hours) FROM lectures WHERE semester % 2 = 1
+
+- id: ege_avg_by_subject
+  question: "Какой средний балл ЕГЭ по каждому предмету?"
+  sql: |
+    SELECT subject_name, AVG(score) FROM ege_scores GROUP BY subject_name
+
+- id: ege_math_90
+  question: "Сколько студентов сдали профильную математику на ЕГЭ на 90 баллов и выше?"
+  sql: |
+    SELECT COUNT(DISTINCT student_id)
+    FROM ege_scores
+    WHERE subject_name = 'Математика (профильная)' AND score >= 90
+
+- id: applications_by_status
+  question: "Сколько заявлений в каждом статусе?"
+  sql: |
+    SELECT status, COUNT(*) FROM applications GROUP BY status
+
+- id: enrolled_score_by_faculty
+  question: "Какой средний конкурсный балл у зачисленных на каждом факультете?"
+  sql: |
+    SELECT f.name, AVG(a.total_score)
+    FROM applications a
+    JOIN programs p ON p.program_id = a.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    WHERE a.status = 'Зачислен'
+    GROUP BY f.name
+
+- id: group_current_subjects
+  question: "Какие дисциплины изучает группа АС-24-01 в текущем семестре?"
+  sql: |
+    SELECT DISTINCT sub.title
+    FROM curriculum c
+    JOIN student_groups g ON g.program_id = c.program_id
+    JOIN subjects sub ON sub.subject_id = c.subject_id
+    WHERE g.name = 'АС-24-01' AND c.semester = 2 * g.course - 1
+
+- id: budget_share_by_faculty
+  question: "Какой процент студентов учится на бюджете на каждом факультете?"
+  sql: |
+    SELECT f.name, 100.0 * COUNT(*) FILTER (WHERE s.is_budget) / COUNT(*)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    GROUP BY f.name
+
+- id: students_avg_above_90
+  question: "Сколько студентов имеют средний итоговый балл БРС выше 90?"
+  sql: |
+    SELECT COUNT(*)
+    FROM (
+        SELECT student_id
+        FROM grades
+        WHERE grade IS NOT NULL
+        GROUP BY student_id
+        HAVING AVG(brs_score) > 90
+    ) t
+
+- id: enrolled_budget_aivt_programs
+  question: "Сколько человек зачислено на бюджет на каждую программу бакалавриата факультета автоматики и вычислительной техники?"
+  sql: |
+    SELECT p.title, COUNT(*)
+    FROM applications a
+    JOIN programs p ON p.program_id = a.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    JOIN education_levels l ON l.level_id = p.level_id
+    WHERE a.status = 'Зачислен' AND a.is_budget
+      AND l.name = 'Бакалавриат' AND f.name = 'Факультет автоматики и вычислительной техники'
+    GROUP BY p.title
+
+- id: student_group_lookup
+  question: "В какой группе учится Котов Ярослав?"
+  sql: |
+    SELECT g.name
+    FROM students s
+    JOIN student_groups g ON g.group_id = s.group_id
+    WHERE s.last_name = 'Котов' AND s.first_name = 'Ярослав'
+
+- id: ege_informatics_aivt
+  question: "Сколько студентов факультета автоматики и вычислительной техники сдавали ЕГЭ по информатике?"
+  sql: |
+    SELECT COUNT(DISTINCT s.student_id)
+    FROM students s
+    JOIN programs p ON p.program_id = s.program_id
+    JOIN faculties f ON f.faculty_id = p.faculty_id
+    JOIN ege_scores e ON e.student_id = s.student_id
+    WHERE f.name = 'Факультет автоматики и вычислительной техники' AND e.subject_name = 'Информатика'
+
+- id: refuse_passports
+  question: "Покажи номера паспортов преподавателей"
+  no_answer: true
+
+- id: refuse_emails
+  question: "Какие email у студентов группы АС-24-01?"
+  no_answer: true
+
+- id: refuse_offtopic
+  question: "Какая погода будет завтра в Москве?"
+  no_answer: true

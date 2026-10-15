@@ -20,7 +20,7 @@ CREATE TABLE public.education_levels (
 );
 
 COMMENT ON TABLE public.education_levels IS 'Уровни высшего образования';
-COMMENT ON COLUMN public.education_levels.name IS 'Название уровня образования';
+COMMENT ON COLUMN public.education_levels.name IS 'Название уровня образования. Студенты бакалавриата — бакалавры, магистратуры — магистранты, аспирантуры — аспиранты';
 
 CREATE TABLE public.programs (
     program_id      integer PRIMARY KEY,
@@ -74,7 +74,7 @@ CREATE TABLE public.streams (
 COMMENT ON TABLE public.streams IS 'Потоки: группы одной программы, года набора и формы обучения, которые вместе слушают лекции';
 COMMENT ON COLUMN public.streams.name IS 'Название потока, например АС-24 или АС-24, поток 2';
 COMMENT ON COLUMN public.streams.admission_year IS 'Год набора (поступления)';
-COMMENT ON COLUMN public.streams.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году';
+COMMENT ON COLUMN public.streams.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году; текущий семестр потока = 2 * course - 1';
 COMMENT ON COLUMN public.streams.study_form IS 'Форма обучения';
 
 CREATE TABLE public.student_groups (
@@ -91,7 +91,7 @@ COMMENT ON TABLE public.student_groups IS 'Академические групп
 COMMENT ON COLUMN public.student_groups.name IS 'Название группы, например АС-24-01 (24 — год набора), у заочных групп — с буквой з: ЭКз-24-01';
 COMMENT ON COLUMN public.student_groups.stream_id IS 'Поток, в который входит группа';
 COMMENT ON COLUMN public.student_groups.admission_year IS 'Год набора (поступления)';
-COMMENT ON COLUMN public.student_groups.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году';
+COMMENT ON COLUMN public.student_groups.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году; текущий семестр группы = 2 * course - 1';
 COMMENT ON COLUMN public.student_groups.study_form IS 'Форма обучения';
 
 CREATE TABLE public.employees (
@@ -160,7 +160,7 @@ COMMENT ON COLUMN public.students.birth_date IS 'Дата рождения';
 COMMENT ON COLUMN public.students.program_id IS 'Программа, на которой учится студент';
 COMMENT ON COLUMN public.students.group_id IS 'Академическая группа студента';
 COMMENT ON COLUMN public.students.admission_year IS 'Год поступления';
-COMMENT ON COLUMN public.students.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году';
+COMMENT ON COLUMN public.students.course IS 'Курс (год обучения, 1–4) в 2026/2027 учебном году; текущий семестр студента = 2 * course - 1';
 COMMENT ON COLUMN public.students.study_form IS 'Форма обучения';
 COMMENT ON COLUMN public.students.is_budget IS 'true — обучение на бюджетной основе, false — на платной (контракт)';
 COMMENT ON COLUMN public.students.military_training IS 'Обучается на военной кафедре (только юноши очной формы бакалавриата, со 2 курса, 2 года)';
@@ -211,7 +211,7 @@ CREATE TABLE public.grades (
     exam_date      date
 );
 
-COMMENT ON TABLE public.grades IS 'Баллы БРС студентов по дисциплинам: за завершённые семестры — итоговые с оценкой, за текущий осенний семестр 2026/2027 — текущий рейтинг без оценки';
+COMMENT ON TABLE public.grades IS 'Баллы БРС студентов по дисциплинам: за завершённые семестры — итоговые с оценкой, за текущий осенний семестр 2026/2027 — текущий рейтинг без оценки. Успеваемость и средний балл считай только по итоговым записям (grade IS NOT NULL), если не спрашивают про текущий рейтинг';
 COMMENT ON COLUMN public.grades.semester IS 'Номер семестра от начала обучения (1–8): нечётный — осенний, чётный — весенний';
 COMMENT ON COLUMN public.grades.academic_year IS 'Учебный год';
 COMMENT ON COLUMN public.grades.brs_score IS 'Балл по балльно-рейтинговой системе (БРС), 0–100; при grade IS NULL — текущий рейтинг в идущем семестре, иначе итоговый балл';
